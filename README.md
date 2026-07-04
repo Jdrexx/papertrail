@@ -17,27 +17,19 @@ PaperTrail merges three existing tools into one unified platform:
 ## Quick Start
 
 ```bash
-# Install
 cd papertrail
 pip install -e .
-
-# Run
 uvicorn papertrail:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Open **http://127.0.0.1:8000/docs** for the interactive API browser.
 
-### Optional extras
+### Optional Extras
 
 ```bash
-# For PDF/image plan processing
-pip install -e ".[plans]"
-
-# For OCR (requires Tesseract binary installed system-wide)
-pip install -e ".[ocr]"
-
-# For development
-pip install -e ".[dev]"
+pip install -e ".[plans]"   # PDF/image plan processing
+pip install -e ".[ocr]"     # OCR (requires Tesseract binary)
+pip install -e ".[dev]"     # Development dependencies
 ```
 
 ---
@@ -48,16 +40,16 @@ All endpoints under `/api/v1/`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/health` | Health check with document counts by domain |
-| `POST` | `/api/v1/documents` | Upload PDF/image for text extraction |
-| `GET` | `/api/v1/documents` | List uploaded plan documents |
-| `GET` | `/api/v1/documents/{id}/pages/{n}` | Get extracted page text |
-| `POST` | `/api/v1/ingest` | Ingest text as knowledge chunks |
-| `POST` | `/api/v1/ask` | Ask a question against ingested chunks |
-| `POST` | `/api/v1/process` | Parse unstructured text into structured rows |
-| `POST` | `/api/v1/upload` | Upload a text file for row extraction |
-| `GET` | `/api/v1/export.csv` | Export all receipt rows as CSV |
-| `GET` | `/api/v1/search` | Full-text search across all domains |
+| GET | `/api/v1/health` | Health check with document counts by domain |
+| POST | `/api/v1/documents` | Upload PDF/image for text extraction |
+| GET | `/api/v1/documents` | List uploaded plan documents |
+| GET | `/api/v1/documents/{id}/pages/{n}` | Get extracted page text |
+| POST | `/api/v1/ingest` | Ingest text as knowledge chunks |
+| POST | `/api/v1/ask` | Ask a question against ingested chunks |
+| POST | `/api/v1/process` | Parse unstructured text into structured rows |
+| POST | `/api/v1/upload` | Upload a text file for row extraction |
+| GET | `/api/v1/export.csv` | Export all receipt rows as CSV |
+| GET | `/api/v1/search` | Full-text search across all domains |
 
 ---
 
@@ -66,27 +58,25 @@ All endpoints under `/api/v1/`.
 ```
 papertrail/
 ├── papertrail/
-│   ├── __init__.py          # create_app() factory + module-level app
+│   ├── __init__.py        # create_app() factory + module-level app
 │   ├── core/
-│   │   ├── config.py        # Settings (paths, tunables)
-│   │   ├── database.py      # Unified SQLite + FTS5 schema
-│   │   └── models.py        # Pydantic models + dataclasses
+│   │   ├── config.py      # Settings (paths, tunables)
+│   │   ├── database.py    # Unified SQLite + FTS5 schema
+│   │   └── models.py      # Pydantic models + dataclasses
 │   ├── adapters/
-│   │   ├── search.py        # FTS5 SearchIndex + PyMuPDF/OCR extractors
-│   │   ├── knowledge.py     # Chunking, keyword scoring, Q&A
-│   │   └── scan.py          # Receipt/invoice regex parsing, CSV export
+│   │   ├── search.py      # FTS5 SearchIndex + PyMuPDF/OCR extractors
+│   │   ├── knowledge.py   # Chunking, keyword scoring, Q&A
+│   │   └── scan.py        # Receipt/invoice regex parsing, CSV export
 │   └── api/
-│       ├── health.py        # GET /api/v1/health
-│       ├── documents.py     # Upload, list, get page
-│       ├── knowledge.py     # POST /api/v1/ingest, /ask
-│       ├── scan.py          # POST /api/v1/process, /upload, GET /export.csv
-│       └── search.py        # GET /api/v1/search
+│       ├── health.py      # GET /api/v1/health
+│       ├── documents.py   # Upload, list, get page
+│       ├── knowledge.py   # POST /api/v1/ingest, /ask
+│       ├── scan.py        # POST /api/v1/process, /upload, GET /export.csv
+│       └── search.py      # GET /api/v1/search
 ├── tests/
 ├── pyproject.toml
 └── README.md
 ```
-
----
 
 ## Storage
 
