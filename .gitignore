@@ -29,3 +29,6 @@ results/
 # Virtual env
 .venv/
 venv/
+.procoder/state/
+.procoder/index/
+.lycheecache
