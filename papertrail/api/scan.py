@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from papertrail.core.models import ProcessRequest, ProcessResponse
@@ -19,7 +19,15 @@ def process(req: ProcessRequest, request: Request):
 
 @router.post("/upload", response_model=ProcessResponse)
 async def upload_scan(request: Request, file: UploadFile = File(...)):
-    content = (await file.read()).decode("utf-8", errors="ignore")
+    settings = request.app.state.settings
+    content = (await file.read(settings.MAX_UPLOAD_BYTES + 1)).decode(
+        "utf-8", errors="ignore"
+    )
+    if len(content.encode("utf-8")) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds the {settings.MAX_UPLOAD_BYTES // (1024 * 1024)} MB upload limit",
+        )
     parser = request.app.state.receipt_parser
     rows = parser.process_and_store(content, file.filename or "upload")
     return ProcessResponse(row_count=len(rows), rows=rows)

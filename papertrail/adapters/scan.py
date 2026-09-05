@@ -14,6 +14,20 @@ import re
 from papertrail.core.database import Database
 from papertrail.core.models import ExtractedRow
 
+# Spreadsheet formula-injection guard: Excel/Sheets evaluate cells that begin
+# with these characters as formulas. Receipt descriptions come from untrusted
+# text (scanned lines, uploaded files), so a line like "=HYPERLINK(...)" would
+# execute when the export is opened. Prefixing with a single quote forces
+# text interpretation. Applies to every CSV field, not just descriptions.
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(value: object) -> object:
+    text = str(value)
+    if text.startswith(_CSV_FORMULA_PREFIXES):
+        return "'" + text
+    return value
+
 
 class ReceiptParser:
     """Extract table rows from receipt/invoice text using regex heuristics."""
@@ -30,7 +44,9 @@ class ReceiptParser:
                 rows.append(row)
         return rows
 
-    def process_and_store(self, text: str, source: str = "manual") -> list[ExtractedRow]:
+    def process_and_store(
+        self, text: str, source: str = "manual"
+    ) -> list[ExtractedRow]:
         """Parse *text* into rows, store as a ``receipt`` document, return rows."""
         rows = self.parse(text, source)
         payload = {"rows": [r.model_dump() for r in rows], "source": source}
@@ -46,12 +62,19 @@ class ReceiptParser:
     def to_csv(self) -> str:
         """Build a CSV string from all stored receipt rows."""
         out = io.StringIO()
-        writer = csv.DictWriter(out, fieldnames=["date", "description", "amount", "confidence", "raw"])
+        writer = csv.DictWriter(
+            out, fieldnames=["date", "description", "amount", "confidence", "raw"]
+        )
         writer.writeheader()
         for rec in self.db.list_documents(domain="receipt"):
             payload = json.loads(str(rec.get("payload", "{}")))
             for row in payload.get("rows", []):
-                writer.writerow(row)
+                safe = dict(row)
+                # Guard only free-text columns; amounts may legitimately start
+                # with "-" (refunds/credits) and must stay numeric for Excel.
+                safe["description"] = _csv_safe(safe.get("description", ""))
+                safe["raw"] = _csv_safe(safe.get("raw", ""))
+                writer.writerow(safe)
         out.seek(0)
         return out.getvalue()
 

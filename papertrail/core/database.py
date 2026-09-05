@@ -26,6 +26,10 @@ class Database:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
+        # WAL lets readers proceed during writes, but without a busy timeout a
+        # concurrent write surfaces "database is locked" immediately instead of
+        # waiting its turn. 5s matches the local single-user workload.
+        conn.execute("PRAGMA busy_timeout=5000")
         return conn
 
     # ── schema ──────────────────────────────────────────────────────────────
@@ -46,8 +50,12 @@ class Database:
                     created_at    TEXT NOT NULL DEFAULT (datetime('now'))
                 )
             """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_domain ON documents(domain)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_parent ON documents(parent_id)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_documents_domain ON documents(domain)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_documents_parent ON documents(parent_id)"
+            )
 
             conn.execute("""
                 CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
@@ -80,8 +88,16 @@ class Database:
                 """INSERT INTO documents(domain, title, source, storage_path, payload,
                                          text_content, page_number, parent_id)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (domain, title, source, storage_path, payload or "{}",
-                 text_content, page_number, parent_id),
+                (
+                    domain,
+                    title,
+                    source,
+                    storage_path,
+                    payload or "{}",
+                    text_content,
+                    page_number,
+                    parent_id,
+                ),
             )
             doc_id = int(cur.lastrowid)
             conn.execute(
@@ -92,7 +108,9 @@ class Database:
 
     def get_document(self, doc_id: int) -> dict[str, Any] | None:
         with self.connect() as conn:
-            row = conn.execute("SELECT * FROM documents WHERE id = ?", (doc_id,)).fetchone()
+            row = conn.execute(
+                "SELECT * FROM documents WHERE id = ?", (doc_id,)
+            ).fetchone()
         return dict(row) if row else None
 
     def list_documents(self, domain: str | None = None) -> list[dict[str, Any]]:

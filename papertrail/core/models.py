@@ -9,21 +9,23 @@ from pydantic import BaseModel, Field
 
 # ── API request models ─────────────────────────────────────────────────────
 
+
 class IngestRequest(BaseModel):
-    title: str = ""
-    text: str = Field(..., min_length=1)
+    title: str = Field(default="", max_length=500)
+    text: str = Field(..., min_length=1, max_length=200_000)
 
 
 class QuestionRequest(BaseModel):
-    question: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1, max_length=5_000)
 
 
 class ProcessRequest(BaseModel):
-    text: str = Field(..., min_length=1)
-    source: str = "manual"
+    text: str = Field(..., min_length=1, max_length=200_000)
+    source: str = Field(default="manual", max_length=500)
 
 
 # ── API response models ────────────────────────────────────────────────────
+
 
 class Citation(BaseModel):
     title: str
@@ -84,6 +86,7 @@ class HealthResponse(BaseModel):
 
 
 # ── Internal dataclasses ────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class ExtractedPage:

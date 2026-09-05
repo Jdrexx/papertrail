@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 import uuid
 from pathlib import Path
 
@@ -33,15 +32,27 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
 
     stored_name = f"{uuid.uuid4().hex}{ext}"
     stored_path = settings.upload_dir / stored_name
+    bytes_written = 0
     with stored_path.open("wb") as out:
-        shutil.copyfileobj(file.file, out)
+        while chunk := file.file.read(1024 * 1024):
+            bytes_written += len(chunk)
+            if bytes_written > settings.MAX_UPLOAD_BYTES:
+                out.close()
+                stored_path.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File exceeds the {settings.MAX_UPLOAD_BYTES // (1024 * 1024)} MB upload limit",
+                )
+            out.write(chunk)
 
     try:
         pages = idx.extract_pages(stored_path)
         document_id = idx.add_pdf_pages(filename, pages, str(stored_path))
     except Exception as exc:
         stored_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=422, detail=f"Could not process document: {exc}") from exc
+        raise HTTPException(
+            status_code=422, detail=f"Could not process document: {exc}"
+        ) from exc
 
     return UploadResponse(id=document_id, filename=filename, page_count=len(pages))
 

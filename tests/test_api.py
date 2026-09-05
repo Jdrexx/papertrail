@@ -40,7 +40,10 @@ async def test_health(client):
 async def test_ingest_and_ask(client):
     resp = await client.post(
         "/api/v1/ingest",
-        json={"title": "test", "text": "FastAPI is a modern web framework for building APIs with Python."},
+        json={
+            "title": "test",
+            "text": "FastAPI is a modern web framework for building APIs with Python.",
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -57,7 +60,10 @@ async def test_ingest_and_ask(client):
 async def test_process_scan(client):
     resp = await client.post(
         "/api/v1/process",
-        json={"text": "1/15 Office Depot $42.18\n1/16 GitHub Pro $4.00", "source": "test_receipt"},
+        json={
+            "text": "1/15 Office Depot $42.18\n1/16 GitHub Pro $4.00",
+            "source": "test_receipt",
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -67,7 +73,10 @@ async def test_process_scan(client):
 
 @pytest.mark.asyncio
 async def test_export_csv(client):
-    await client.post("/api/v1/process", json={"text": "1/15 Office Depot $42.18", "source": "csv_test"})
+    await client.post(
+        "/api/v1/process",
+        json={"text": "1/15 Office Depot $42.18", "source": "csv_test"},
+    )
     resp = await client.get("/api/v1/export.csv")
     assert resp.status_code == 200
     assert "csv" in resp.headers.get("content-type", "")
@@ -77,7 +86,10 @@ async def test_export_csv(client):
 
 @pytest.mark.asyncio
 async def test_search(client):
-    await client.post("/api/v1/ingest", json={"title": "search_test", "text": "Python is a programming language."})
+    await client.post(
+        "/api/v1/ingest",
+        json={"title": "search_test", "text": "Python is a programming language."},
+    )
     resp = await client.get("/api/v1/search", params={"q": "python"})
     assert resp.status_code == 200
     data = resp.json()
@@ -89,3 +101,39 @@ async def test_search(client):
 async def test_404(client):
     resp = await client.get("/api/v1/documents/999/pages/1")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_csv_export_neutralizes_formula_injection(client):
+    # A receipt line whose description starts with "=" must not round-trip as a
+    # live spreadsheet formula; the export must prefix it with "'".
+    await client.post(
+        "/api/v1/process",
+        json={
+            "text": '=HYPERLINK("http://evil.example","x") 1/15 $42.18',
+            "source": "inj",
+        },
+    )
+    resp = await client.get("/api/v1/export.csv")
+    assert resp.status_code == 200
+    body = resp.text
+    assert "=HYPERLINK" not in body or "'=HYPERLINK" in body
+    assert ",'=HYPERLINK" in body or "'=HYPERLINK" in body
+
+
+@pytest.mark.asyncio
+async def test_upload_scan_rejects_oversized_file(client):
+    resp = await client.post(
+        "/api/v1/upload",
+        files={"file": ("big.txt", b"x" * (26 * 1024 * 1024), "text/plain")},
+    )
+    assert resp.status_code == 413
+
+
+@pytest.mark.asyncio
+async def test_ingest_rejects_oversized_text(client):
+    resp = await client.post(
+        "/api/v1/ingest",
+        json={"title": "big", "text": "x" * 200_001},
+    )
+    assert resp.status_code == 422

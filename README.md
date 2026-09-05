@@ -4,11 +4,11 @@
 
 PaperTrail merges three existing tools into one unified platform:
 
-| Source | Domain | Core Capability |
-|--------|--------|----------------|
-| **ArchPlanReview** | Plans & PDFs | Upload PDFs/images, extract text (PyMuPDF/OCR), FTS5 search |
-| **Knowledge Assistant** | Notes & Docs | Ingest text, chunk, keyword-retrieval Q&A with citations |
-| **ScanExcel** | Receipts & Invoices | Parse unstructured text into structured rows, CSV export |
+| Source                  | Domain              | Core Capability                                             |
+| ----------------------- | ------------------- | ----------------------------------------------------------- |
+| **ArchPlanReview**      | Plans & PDFs        | Upload PDFs/images, extract text (PyMuPDF/OCR), FTS5 search |
+| **Knowledge Assistant** | Notes & Docs        | Ingest text, chunk, keyword-retrieval Q&A with citations    |
+| **ScanExcel**           | Receipts & Invoices | Parse unstructured text into structured rows, CSV export    |
 
 **What they share:** FastAPI backend, SQLite storage, no cloud, no API keys.
 
@@ -38,18 +38,18 @@ pip install -e ".[dev]"     # Development dependencies
 
 All endpoints under `/api/v1/`.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/health` | Health check with document counts by domain |
-| POST | `/api/v1/documents` | Upload PDF/image for text extraction |
-| GET | `/api/v1/documents` | List uploaded plan documents |
-| GET | `/api/v1/documents/{id}/pages/{n}` | Get extracted page text |
-| POST | `/api/v1/ingest` | Ingest text as knowledge chunks |
-| POST | `/api/v1/ask` | Ask a question against ingested chunks |
-| POST | `/api/v1/process` | Parse unstructured text into structured rows |
-| POST | `/api/v1/upload` | Upload a text file for row extraction |
-| GET | `/api/v1/export.csv` | Export all receipt rows as CSV |
-| GET | `/api/v1/search` | Full-text search across all domains |
+| Method | Endpoint                           | Description                                  |
+| ------ | ---------------------------------- | -------------------------------------------- |
+| GET    | `/api/v1/health`                   | Health check with document counts by domain  |
+| POST   | `/api/v1/documents`                | Upload PDF/image for text extraction         |
+| GET    | `/api/v1/documents`                | List uploaded plan documents                 |
+| GET    | `/api/v1/documents/{id}/pages/{n}` | Get extracted page text                      |
+| POST   | `/api/v1/ingest`                   | Ingest text as knowledge chunks              |
+| POST   | `/api/v1/ask`                      | Ask a question against ingested chunks       |
+| POST   | `/api/v1/process`                  | Parse unstructured text into structured rows |
+| POST   | `/api/v1/upload`                   | Upload a text file for row extraction        |
+| GET    | `/api/v1/export.csv`               | Export all receipt rows as CSV               |
+| GET    | `/api/v1/search`                   | Full-text search across all domains          |
 
 ---
 
@@ -82,11 +82,11 @@ papertrail/
 
 Single SQLite database with a `documents` table using a `domain` discriminator:
 
-| Domain | What It Stores |
-|--------|---------------|
-| `plan` | A parent document (PDF/image upload) |
-| `plan_page` | One page of extracted plan text |
-| `knowledge_chunk` | A text chunk from ingested notes |
-| `receipt` | A parsed receipt/invoice with structured rows |
+| Domain            | What It Stores                                |
+| ----------------- | --------------------------------------------- |
+| `plan`            | A parent document (PDF/image upload)          |
+| `plan_page`       | One page of extracted plan text               |
+| `knowledge_chunk` | A text chunk from ingested notes              |
+| `receipt`         | A parsed receipt/invoice with structured rows |
 
 A unified FTS5 index (`documents_fts`) enables cross-domain search via BM25 ranking. All data stays on your machine.

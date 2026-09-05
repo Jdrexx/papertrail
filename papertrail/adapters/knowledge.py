@@ -38,7 +38,11 @@ class KnowledgeEngine:
     def answer(self, question: str) -> dict[str, Any]:
         """Score chunks against *question*, return top-3 citations and an answer."""
         chunks = self.db.list_documents(domain="knowledge_chunk")
-        ranked = sorted(chunks, key=lambda r: self._score(question, str(r.get("text_content", ""))), reverse=True)
+        ranked = sorted(
+            chunks,
+            key=lambda r: self._score(question, str(r.get("text_content", ""))),
+            reverse=True,
+        )
         top = ranked[:3]
 
         citations: list[Citation] = []
@@ -46,7 +50,9 @@ class KnowledgeEngine:
             text = str(r.get("text_content", ""))
             score = self._score(question, text)
             if score > 0:
-                citations.append(Citation(title=str(r.get("title", "")), excerpt=text[:280]))
+                citations.append(
+                    Citation(title=str(r.get("title", "")), excerpt=text[:280])
+                )
 
         answer = (
             "I found relevant notes: " + " ".join(c.excerpt for c in citations[:2])
@@ -58,7 +64,9 @@ class KnowledgeEngine:
     def _chunk(self, text: str, size: int | None = None) -> list[str]:
         size = size or self.settings.MAX_CHUNK_SIZE
         words = text.split()
-        return [" ".join(words[i : i + size]) for i in range(0, len(words), size)] or [text]
+        return [" ".join(words[i : i + size]) for i in range(0, len(words), size)] or [
+            text
+        ]
 
     @staticmethod
     def _score(query: str, chunk: str) -> int:
